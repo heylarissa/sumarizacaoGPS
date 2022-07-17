@@ -15,6 +15,7 @@ typedef struct node
         type[LINESIZE + 1],
         *date;
     int pos;
+    float elev;
     struct node *next;
 
 } bikeNode;
@@ -25,7 +26,7 @@ typedef struct list {
 } bikeList;
 
 void checkFileOpening(FILE *arq);
-void readLog(bikeNode *bike, bikeList *list);
+void readLog(bikeNode *bike, bikeList *list, bikeNode vetor[]);
 void listInit(bikeList *list);
 
 void getFilePath(char filePath[], char *argv, char dirName[]);
@@ -34,7 +35,7 @@ void checkInput(int argc);
 
 void checkDirectoryOpening(DIR *dir);
 
-bikeNode *loadLogs(int argc, char *argv[], bikeList *list);
+bikeNode *loadLogs(int argc, char *argv[], bikeList *list, bikeNode vetor[]);
 
 
 void bikeInit(bikeNode *bike);
