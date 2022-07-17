@@ -9,8 +9,8 @@
 
 int main(int argc, char *argv[])
 {
-    int op;
-    int quit = false;
+    /*     int op;
+        int quit = false; */
 
     checkInput(argc);
 
@@ -99,21 +99,37 @@ void insertNode(bikeNode *newNode, bikeNode *bike, bikeList *list)
     printf("Novo nodo criado\n");
 }
 
+void ignoreEnter(FILE *arq)
+{
+    char c = fgetc(arq);
+    while (c == '\n')
+    {
+        c = fgetc(arq);
+    }
+    ungetc(c, arq);
+}
+
 void readLog(bikeNode *bike, bikeList *list)
 {
     char c,
-        *infoType = malloc(sizeof(char));
+        *infoType = malloc(sizeof(char)),
+        *date = malloc(sizeof(char)),
+        *subAcumulada = malloc(sizeof(char)),
+        *distance = malloc(sizeof(char)),
+        *other = malloc(sizeof(char));
 
     FILE *bikeLog;
     bikeLog = fopen(bike->filePath, "r");
     checkFileOpening(bikeLog);
- 
+
     bikeNode *newNode;
     newNode = malloc(sizeof(bikeNode));
-    insertNode(newNode, bike, list); 
- 
+    insertNode(newNode, bike, list);
+
     while (!feof(bikeLog))
     {
+        memset(infoType, 0, strlen(infoType));
+        ignoreEnter(bikeLog);
         fscanf(bikeLog, "%[^:]", infoType);
         c = fgetc(bikeLog);
         c = fgetc(bikeLog);
@@ -124,7 +140,29 @@ void readLog(bikeNode *bike, bikeList *list)
             fscanf(bikeLog, "%[^\n]", bike->type);
             printf("Bicicleta: %s \n", bike->type);
         }
-        
+        else if (strcmp(infoType, "Date") == 0)
+        {
+            fscanf(bikeLog, "%[^\n]", date);
+            printf("Data: %s\n", date);
+            // converter data para formato data conforme enunciado
+        }
+        else if (strcmp(infoType, "altitude") == 0)
+        {
+            fscanf(bikeLog, "%[^\n]", subAcumulada);
+            printf("%s: %s\n", infoType, subAcumulada);
+        }
+        else if (strcmp(infoType, "distance") == 0)
+        {
+            fscanf(bikeLog, "%[^\n]", distance);
+            printf("%s: %s\n", infoType, distance);
+        }
+        else
+        {
+            fscanf(bikeLog, "%[^\n]", other);
+            //printf("%s: %s\n", infoType, other);
+            // printf ("%s\n", infoType);
+            continue;
+        }
     }
     fclose(bikeLog);
     printf("\n");
@@ -153,7 +191,7 @@ void listInit(bikeList *list)
 
 void getFilePath(char filePath[], char dirName[], char fileName[])
 {
-    memset(filePath, 0, sizeof(char *));
+    memset(filePath, 0, sizeof(char));
     strcpy(filePath, "./");
     strcat(filePath, dirName);
     strcat(filePath, "/");

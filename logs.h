@@ -2,6 +2,9 @@
 #ifndef __LOGS__
 #define __LOGS__
 
+#include <dirent.h>
+#include <stdio.h>
+
 #define LINESIZE 1024
 #define isFILE 8
 
