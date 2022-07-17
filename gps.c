@@ -114,9 +114,14 @@ void readLog(bikeNode *bike, bikeList *list)
     char c,
         *infoType = malloc(sizeof(char)),
         *date = malloc(sizeof(char)),
-        *subAcumulada = malloc(sizeof(char)),
+        *altString = malloc(sizeof(char)),
         *distance = malloc(sizeof(char)),
         *other = malloc(sizeof(char));
+
+    int newAltitude = 0,
+        oldAltitude = 0,
+        subAcumulada = 0,
+        block = 0; // conta o número de blocos dentro de um arquivo;
 
     FILE *bikeLog;
     bikeLog = fopen(bike->filePath, "r");
@@ -148,22 +153,37 @@ void readLog(bikeNode *bike, bikeList *list)
         }
         else if (strcmp(infoType, "altitude") == 0)
         {
-            fscanf(bikeLog, "%[^\n]", subAcumulada);
-            printf("%s: %s\n", infoType, subAcumulada);
+            block ++; // incrementa o número de blocos do arquivo
+
+            fscanf(bikeLog, "%[^\n]", altString);
+
+            altString[strcspn(altString, " ")] = '\0'; // retirando o espaço
+            newAltitude = atoi(altString);
+
+            if (block == 0)
+            {
+                oldAltitude = newAltitude;
+            }
+
+            if (((newAltitude - oldAltitude) > 0))
+            {
+                subAcumulada += (newAltitude - oldAltitude);
+            }
+            oldAltitude = newAltitude;
         }
         else if (strcmp(infoType, "distance") == 0)
         {
             fscanf(bikeLog, "%[^\n]", distance);
-            printf("%s: %s\n", infoType, distance);
+            // printf("%s: %s\n", infoType, distance);
         }
         else
         {
             fscanf(bikeLog, "%[^\n]", other);
-            //printf("%s: %s\n", infoType, other);
-            // printf ("%s\n", infoType);
             continue;
         }
     }
+    subAcumulada -= 1028.8;
+    printf("Numeros de blocos: %d\nSubida Acumulada: %d\n", block, subAcumulada);
     fclose(bikeLog);
     printf("\n");
 }
@@ -232,7 +252,8 @@ bikeNode *loadLogs(int argc, char *argv[], bikeList *list)
     strcpy(dirName, argv[1]);
 
     // load directory
-    while ((pDir = readdir(dir)))
+    int i = 0;
+    while (((pDir = readdir(dir))) && (i < 2))
     {
         if (pDir->d_type == isFILE)
         {
@@ -240,6 +261,7 @@ bikeNode *loadLogs(int argc, char *argv[], bikeList *list)
             getFilePath(bike->filePath, dirName, pDir->d_name);
             readLog(bike, list);
         }
+        i++;
     }
 
     return bike;

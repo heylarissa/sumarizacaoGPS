@@ -8,6 +8,7 @@
 #define LINESIZE 1024
 #define isFILE 8
 
+
 typedef struct node
 {
     char filePath[LINESIZE + 1],
