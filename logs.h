@@ -13,8 +13,7 @@ typedef struct node
 {
     char filePath[LINESIZE + 1],
         type[LINESIZE + 1],
-        *date;
-    int pos;
+        date[LINESIZE+1];
     float elev,
           distance;
     struct node *next;
@@ -23,11 +22,11 @@ typedef struct node
 
 typedef struct list {
     bikeNode *first, *end;
-    int size;
+    int pos;
 } bikeList;
 
 void checkFileOpening(FILE *arq);
-void readLog(bikeNode *newNode, bikeList *list, bikeNode vetor[]);
+void readLog(bikeNode *newNode, bikeList *list);
 void listInit(bikeList *list);
 
 void getFilePath(char filePath[], char *argv, char dirName[]);
@@ -36,7 +35,7 @@ void checkInput(int argc);
 
 void checkDirectoryOpening(DIR *dir);
 
-bikeNode *loadLogs(int argc, char *argv[], bikeList *list, bikeNode vetor[]);
+bikeList *loadLogs(int argc, char *argv[]);
 
 
 void bikeInit(bikeNode *bike);

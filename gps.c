@@ -9,13 +9,19 @@
 
 void printList(bikeList *list)
 {
-    bikeNode *temp;
-
-    temp = list->first;
-
-    while (temp->next != NULL)
+    bikeNode *inicio;
+    inicio = malloc(sizeof(bikeList));
+    inicio = list->first;
+    while (inicio != NULL)
     {
-        fprintf(stdout, "%d: %s\n", temp->pos, temp->type);
+        fprintf(stdout, "path: %s    bike: %s    data:%s    sub_acumulada: %.2f    distance:%.2f\n",
+                inicio->filePath,
+                inicio->type,
+                inicio->date,
+                inicio->elev,
+                inicio->distance);
+
+        inicio = inicio->next;
     }
 }
 
@@ -24,18 +30,14 @@ int main(int argc, char *argv[])
     int op;
     int quit = false;
 
-    bikeNode vetor[LINESIZE + 1];
     checkInput(argc);
 
     bikeList *list;
     list = malloc(sizeof(bikeList));
     listInit(list);
 
-    bikeNode *bike;
-    bike = malloc(sizeof(bikeNode));
-
     printf("Loading logs in list");
-    bike = loadLogs(argc, argv, list, vetor);
+    list = loadLogs(argc, argv);
 
     while (!quit)
     {
@@ -45,7 +47,7 @@ int main(int argc, char *argv[])
         {
         case 0:
             quit = true;
-            free(bike);
+            free(list);
             break;
 
         case 1:
@@ -89,25 +91,28 @@ void checkFileOpening(FILE *arq)
 
 void insertNode(bikeNode *newNode, bikeList *list)
 {
-    bikeNode *temp = list->first;
+    bikeList *temp;
 
     // list is empty?
     if (list->first == NULL)
     {
-        listInit(list);
         list->first = newNode;
-        list->size++;
+        list->pos++;
         return;
     }
 
-    // finding the last node
-    while (temp->next != NULL)
+    temp = list;
+
+    // insert new node
+    while (temp->first != NULL)
     {
-        temp = temp->next;
+        temp->first = temp->first->next;
     }
-    newNode->pos++;
-    temp->next = newNode;
-    list->end = temp;
+
+    temp->first->next = newNode;
+    list->end = newNode;
+
+    list->pos++;
 }
 
 void ignoreEnter(FILE *arq)
@@ -120,29 +125,51 @@ void ignoreEnter(FILE *arq)
     ungetc(c, arq);
 }
 
-void readLog(bikeNode *newNode, bikeList *list, bikeNode vetor[])
+float subidaAcumuladaCalc(FILE *bikeLog, int block)
+{
+    char *altitude = malloc(sizeof(char));
+    float newAltitude = 0,
+          oldAltitude = 0,
+          subidaAcumulada = 0;
+
+    fscanf(bikeLog, "%[^\n]", altitude);
+
+    altitude[strcspn(altitude, " ")] = '\0'; // retirando o espaço e a unidade
+    newAltitude = atof(altitude);
+
+    if (block > 1 && ((newAltitude - oldAltitude) > 0))
+    {
+        subidaAcumulada += (newAltitude - oldAltitude);
+    }
+    oldAltitude = newAltitude;
+    return (subidaAcumulada);
+}
+
+void readLog(bikeNode *newNode, bikeList *list)
 {
     char c,
         *infoType = malloc(sizeof(char)),
-        *date = malloc(sizeof(char)),
-        *altitude = malloc(sizeof(char)),
+
         *distance = malloc(sizeof(char)),
         *other = malloc(sizeof(char));
 
-    float newAltitude = 0,
-          oldAltitude = 0;
     int block = 0; // conta o número de blocos dentro de um arquivo;
 
     FILE *bikeLog;
     bikeLog = fopen(newNode->filePath, "r");
     checkFileOpening(bikeLog);
 
+    // incializar o nodo
+    bikeInit(newNode);
 
+    // inserir os dados
     while (!feof(bikeLog))
     {
         memset(infoType, 0, strlen(infoType));
         ignoreEnter(bikeLog);
+
         fscanf(bikeLog, "%[^:]", infoType);
+
         c = fgetc(bikeLog);
         c = fgetc(bikeLog);
 
@@ -150,64 +177,62 @@ void readLog(bikeNode *newNode, bikeList *list, bikeNode vetor[])
         if (strcmp(infoType, "Gear") == 0)
         {
             fscanf(bikeLog, "%[^\n]", newNode->type);
-            printf("Bicicleta: %s \n", newNode->type);
+            fprintf(stdout, "Bicicleta: %s \n", newNode->type);
         }
         else if (strcmp(infoType, "Date") == 0)
         {
-            fscanf(bikeLog, "%[^\n]", date);
-            printf("Data: %s\n", date);
+            fscanf(bikeLog, "%[^\n]", newNode->date);
+            fprintf(stdout, "Data: %s\n", newNode->date);
             // converter para formato de data conforme enunciado
         }
         else if (strcmp(infoType, "altitude") == 0)
         {
             block++; // incrementa o número de blocos do arquivo
-
-            fscanf(bikeLog, "%[^\n]", altitude);
-
-            altitude[strcspn(altitude, " ")] = '\0'; // retirando o espaço e a unidade
-            newAltitude = atof(altitude);
-
-            if (block > 1 && ((newAltitude - oldAltitude) > 0))
-            {
-                newNode->elev += (newAltitude - oldAltitude);
-            }
-            oldAltitude = newAltitude;
+            newNode->elev = subidaAcumuladaCalc(bikeLog, block);
         }
         else if (strcmp(infoType, "distance") == 0)
         {
             fscanf(bikeLog, "%[^\n]", distance);
             distance[strcspn(distance, " ")] = '\0';
-            newNode->distance +=atof(distance);
+            newNode->distance += atof(distance);
         }
+        /*
+         else if (strcmp(infoType, "cadence") == 0)
+         {
+             cadenciaMedia(bikeLog);
+             fscanf(bikeLog, "%[^\n]", distance);
+         } */
+
         else
         {
             fscanf(bikeLog, "%[^\n]", other);
             continue;
         }
     }
-    newNode->distance = newNode->distance/1000; // convertendo de metros para km
-    printf("Subida Acumulada: %.2f\nDistância: %.2f\n", newNode->elev, newNode->distance);
+
+    newNode->distance = newNode->distance / 1000; // convertendo de metros para km
+
+    fprintf(stdout, "Subida Acumulada: %.2f\nDistância: %.2f\n", newNode->elev, newNode->distance);
     fclose(bikeLog);
 
+    // inserir na lista
     insertNode(newNode, list);
 
-    list->end = newNode;
-    list->size++;
     printf("\n");
 }
 
-void bikeInit(bikeNode *bike)
+void bikeInit(bikeNode *newNode)
 {
-    if (!bike)
+    if (!newNode)
     {
         fprintf(stderr, "Memória insuficiente\n");
         exit(EXIT_FAILURE);
     }
     else
     {
-        bike->next = NULL;
-        bike->elev = 0;
-        bike->pos = 0;
+        newNode->next = NULL;
+        newNode->elev = 0;
+        newNode->distance = 0;
     }
 }
 
@@ -215,7 +240,7 @@ void listInit(bikeList *list)
 {
     list->first = NULL;
     list->end = NULL;
-    list->size = 0;
+    list->pos = 0;
 }
 
 void getFilePath(char filePath[], char dirName[], char fileName[])
@@ -246,11 +271,14 @@ void checkDirectoryOpening(DIR *dir)
     }
 }
 
-bikeNode *loadLogs(int argc, char *argv[], bikeList *list, bikeNode vetor[])
+bikeList *loadLogs(int argc, char *argv[])
 {
-    bikeNode *bike;
-    bike = malloc(sizeof(bikeNode));
-    
+    bikeNode *newNode;
+    newNode = malloc(sizeof(bikeNode));
+
+    bikeList *list;
+    list = malloc(sizeof(bikeList));
+    listInit(list);
 
     DIR *dir;
     dir = opendir(argv[1]);
@@ -267,13 +295,12 @@ bikeNode *loadLogs(int argc, char *argv[], bikeList *list, bikeNode vetor[])
     {
         if (pDir->d_type == isFILE)
         {
-            printf("Arquivo: %s\n", pDir->d_name);
-            getFilePath(bike->filePath, dirName, pDir->d_name);
-            bikeInit(bike);
-            readLog(bike, list, vetor);
+            fprintf(stdout, "Arquivo: %s\n", pDir->d_name);
+            getFilePath(newNode->filePath, dirName, pDir->d_name);
+            readLog(newNode, list);
         }
         i++;
     }
 
-    return bike;
+    return list;
 }
