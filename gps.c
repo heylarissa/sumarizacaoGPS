@@ -10,12 +10,13 @@
 void printList(bikeList *list)
 {
     bikeNode *inicio;
-    //inicio = malloc(sizeof(bikeList));
     inicio = list->first;
+    int i = 0;
 
     while (inicio != NULL)
     {
-        fprintf(stdout, "path: %s    bike: %s    data:%s    sub_acumulada: %.2f    distance:%.2f\n",
+        fprintf(stdout, "%d      path: %s        %s        data:%s       sub_acumulada: %.2f               distance:%.2f\n",
+                i++,
                 inicio->filePath,
                 inicio->type,
                 inicio->date,
@@ -26,23 +27,50 @@ void printList(bikeList *list)
     }
 }
 
+void searchBike(bikeList *list, char *bikeName)
+{
+    int i = 0;
+    bikeNode *thisBike;
+
+    thisBike = list->first;
+
+    while (thisBike != NULL)
+    {
+        if (strcmp(thisBike->type, bikeName) == 0)
+        {
+            fprintf(stdout, "path: %s        %s        data:%s       sub_acumulada: %.2f               distance:%.2f\n",
+
+                    thisBike->filePath,
+                    thisBike->type,
+                    thisBike->date,
+                    thisBike->elev,
+                    thisBike->distance);
+            i++;
+        }
+        thisBike = thisBike->next;
+    }
+    if (i==0){
+        fprintf(stdout, "\nNão existem bicicletas com esse nome\n");
+        return;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     int op;
+    char thisBike[20];
     int quit = false;
 
     checkInput(argc);
 
     bikeList *list;
-    //list = malloc(sizeof(bikeList));
-    //listInit(list);
 
     printf("Loading logs in list");
     list = loadLogs(argc, argv);
 
     while (!quit)
     {
-        printf("Pressione 0 para sair do programa\n");
+        fprintf(stdout, "\n\n----------MENU----------\n\n0: Sair do programa\n1: Mostra todas as bicicletas encontradas durante o processamento dos arquivos de log.\n2: Pede para o usuário informar uma das bicicletas encontradas e apresenta a lista de atividades, resumo conforme descrito acima.\n\n");
         scanf("%d", &op);
         switch (op)
         {
@@ -54,29 +82,35 @@ int main(int argc, char *argv[])
         case 1:
 
             printList(list);
-
-            // imprime todos os valores da lista
-            // 1 Bicicletas Encontradas: Mostra todas as bicicletas encontradas durante o processamento dos arquivos de log.
             break;
+
         case 2:
-            // busca binária (recursivo)
-            // as bicicletas recebem um número, a busca será feita por este (valor da posição do elemento na lista)
+            fprintf(stdout, "Leitura de input não implementada. Somente demonstração de função\nDigite o nome da bicicleta\n");
+            strcpy(thisBike, "GT Grade");
+            printf("GT Grade\n");
+            searchBike(list, thisBike);
             // 2 Pede para o usuário informar uma das bicicletas encontradas e apresenta a lista de atividades, resumo conforme descrito acima.
             break;
         case 3:
+            fprintf(stdout, "Não implementado\n");
             // 3 Lista todas atividades agrupadas por bicicleta e ordenadas pela data (quicksort)
             break;
         case 4:
+            fprintf(stdout, "Não implementado\n");
+
             // 4 Lista todas atividades agrupadas por bicicleta e ordenadas pela distância (quicksort)
             break;
         case 5:
+            fprintf(stdout, "Não implementado\n");
+
             // 5 Lista todas atividades ordenadas pela subida acumulada (quick sort)
             break;
         case 6:
+            fprintf(stdout, "Não implementado\n");
             // 6 Histograma: O usuário deve escolher uma bicicleta e apresentar um histograma
             break;
         default:
-            printf("voce deve escolher uma opcao valida\n");
+            printf("Voce deve escolher uma opcao valida\n");
             break;
         }
     }
@@ -156,6 +190,12 @@ void readLog(bikeNode *newNode, bikeList *list)
         *distance = malloc(sizeof(char)),
         *other = malloc(sizeof(char));
 
+    char *altitude = malloc(sizeof(char));
+    float newAltitude = 0,
+          oldAltitude = 0,
+          newDistance = 0,
+          oldDistance = 0;
+
     int block = 0; // conta o número de blocos dentro de um arquivo;
 
     FILE *bikeLog;
@@ -164,6 +204,7 @@ void readLog(bikeNode *newNode, bikeList *list)
 
     // incializar o nodo
     bikeInit(newNode);
+    fprintf(stdout, "Reading log: %s \n", newNode->filePath);
 
     // inserir os dados
     while (!feof(bikeLog))
@@ -180,31 +221,38 @@ void readLog(bikeNode *newNode, bikeList *list)
         if (strcmp(infoType, "Gear") == 0)
         {
             fscanf(bikeLog, "%[^\n]", newNode->type);
-            fprintf(stdout, "Bicicleta: %s \n", newNode->type);
         }
         else if (strcmp(infoType, "Date") == 0)
         {
             fscanf(bikeLog, "%[^\n]", newNode->date);
-            fprintf(stdout, "Data: %s\n", newNode->date);
-            // converter para formato de data conforme enunciado
+            // TO DO: converter para formato de data conforme enunciado
         }
         else if (strcmp(infoType, "altitude") == 0)
         {
             block++; // incrementa o número de blocos do arquivo
-            newNode->elev = subidaAcumuladaCalc(bikeLog, block);
+                     // newNode->elev = subidaAcumuladaCalc(bikeLog, block);
+
+            fscanf(bikeLog, "%[^\n]", altitude);
+
+            altitude[strcspn(altitude, " ")] = '\0'; // retirando o espaço e a unidade
+            newAltitude = atof(altitude);
+
+            if (block > 1 && ((newAltitude - oldAltitude) > 0))
+            {
+                newNode->elev += (newAltitude - oldAltitude);
+            }
+            oldAltitude = newAltitude;
         }
         else if (strcmp(infoType, "distance") == 0)
         {
             fscanf(bikeLog, "%[^\n]", distance);
             distance[strcspn(distance, " ")] = '\0';
-            newNode->distance += atof(distance);
+            newDistance = atof(distance);
+            if (block == 1)
+                oldDistance = newDistance;
+
+            newNode->distance += (newDistance - oldDistance);
         }
-        /*
-         else if (strcmp(infoType, "cadence") == 0)
-         {
-             cadenciaMedia(bikeLog);
-             fscanf(bikeLog, "%[^\n]", distance);
-         } */
 
         else
         {
@@ -215,7 +263,6 @@ void readLog(bikeNode *newNode, bikeList *list)
 
     newNode->distance = newNode->distance / 1000; // convertendo de metros para km
 
-    fprintf(stdout, "Subida Acumulada: %.2f\nDistância: %.2f\n", newNode->elev, newNode->distance);
     fclose(bikeLog);
 
     // inserir na lista
@@ -253,7 +300,6 @@ void getFilePath(char filePath[], char dirName[], char fileName[])
     strcat(filePath, dirName);
     strcat(filePath, "/");
     strcat(filePath, fileName);
-    printf("%s\n", filePath);
 }
 
 void checkInput(int argc)
@@ -277,7 +323,6 @@ void checkDirectoryOpening(DIR *dir)
 bikeList *loadLogs(int argc, char *argv[])
 {
     bikeNode *newNode;
-    
 
     bikeList *list;
     list = malloc(sizeof(bikeList));
@@ -291,19 +336,16 @@ bikeList *loadLogs(int argc, char *argv[])
     char dirName[LINESIZE + 1];
     strcpy(dirName, argv[1]);
 
-    int i = 0;
-
     // load directory
-    while (((pDir = readdir(dir))) && i < 4)
+    fprintf(stdout, "Reading directory");
+    while (((pDir = readdir(dir))))
     {
         if (pDir->d_type == isFILE)
         {
             newNode = malloc(sizeof(bikeNode));
-            fprintf(stdout, "Arquivo: %s\n", pDir->d_name);
             getFilePath(newNode->filePath, dirName, pDir->d_name);
             readLog(newNode, list);
         }
-        i++;
     }
 
     return list;
