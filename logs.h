@@ -7,7 +7,8 @@
 
 #define LINESIZE 1024
 #define isFILE 8
-
+#define true 1
+#define false 0
 
 typedef struct node
 {
@@ -34,9 +35,9 @@ void getFilePath(char filePath[], char *argv, char dirName[]);
 void checkInput(int argc);
 
 void checkDirectoryOpening(DIR *dir);
-
 bikeList *loadLogs(int argc, char *argv[]);
 
-
+void printList(bikeList *list);
+void searchBike(bikeList *list, char *bikeName);
 void bikeInit(bikeNode *bike);
 #endif
