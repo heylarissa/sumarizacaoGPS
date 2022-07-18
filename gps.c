@@ -10,8 +10,9 @@
 void printList(bikeList *list)
 {
     bikeNode *inicio;
-    inicio = malloc(sizeof(bikeList));
+    //inicio = malloc(sizeof(bikeList));
     inicio = list->first;
+
     while (inicio != NULL)
     {
         fprintf(stdout, "path: %s    bike: %s    data:%s    sub_acumulada: %.2f    distance:%.2f\n",
@@ -33,8 +34,8 @@ int main(int argc, char *argv[])
     checkInput(argc);
 
     bikeList *list;
-    list = malloc(sizeof(bikeList));
-    listInit(list);
+    //list = malloc(sizeof(bikeList));
+    //listInit(list);
 
     printf("Loading logs in list");
     list = loadLogs(argc, argv);
@@ -91,25 +92,27 @@ void checkFileOpening(FILE *arq)
 
 void insertNode(bikeNode *newNode, bikeList *list)
 {
-    bikeList *temp;
+    bikeNode *temp;
 
     // list is empty?
     if (list->first == NULL)
     {
         list->first = newNode;
+        list->first->next = NULL;
         list->pos++;
         return;
     }
 
-    temp = list;
+    temp = list->first;
 
     // insert new node
-    while (temp->first != NULL)
+    while (temp->next != NULL)
     {
-        temp->first = temp->first->next;
+        temp = temp->next;
     }
 
-    temp->first->next = newNode;
+    temp->next = newNode;
+    newNode->next = NULL;
     list->end = newNode;
 
     list->pos++;
@@ -274,7 +277,7 @@ void checkDirectoryOpening(DIR *dir)
 bikeList *loadLogs(int argc, char *argv[])
 {
     bikeNode *newNode;
-    newNode = malloc(sizeof(bikeNode));
+    
 
     bikeList *list;
     list = malloc(sizeof(bikeList));
@@ -295,6 +298,7 @@ bikeList *loadLogs(int argc, char *argv[])
     {
         if (pDir->d_type == isFILE)
         {
+            newNode = malloc(sizeof(bikeNode));
             fprintf(stdout, "Arquivo: %s\n", pDir->d_name);
             getFilePath(newNode->filePath, dirName, pDir->d_name);
             readLog(newNode, list);
